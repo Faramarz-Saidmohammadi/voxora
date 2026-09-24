@@ -54,3 +54,31 @@ Success: `202 Accepted`
 ```
 
 Errors use `{ "error": { "code", "message", "details?" }, "meta": { "correlationId" } }`.
+
+## Generate speech preview
+
+`POST /api/v1/speech-generation`
+
+This synchronous endpoint uses the same foundation-only demo identity headers as speech requests and additionally requires `idempotency-key`. It is disabled unless `SPEECH_PROVIDER=openai` and a server-only `OPENAI_API_KEY` are configured.
+
+Request:
+
+```json
+{
+  "text": "Your appointment is confirmed.",
+  "locale": "en-US",
+  "voice": "cedar",
+  "format": "mp3",
+  "instructions": "Speak clearly and calmly."
+}
+```
+
+Success: `200 OK` with binary audio and these response headers:
+
+- `Content-Type`: `audio/mpeg`, `audio/wav`, or `audio/ogg`
+- `X-Correlation-ID`: request correlation identifier
+- `X-Voxora-Request-ID`: generated speech request identifier
+- `X-Voxora-AI-Disclosure`: `AI-generated voice`
+- `Cache-Control`: `no-store`
+
+The synchronous route limits text to 1,200 characters. Missing provider configuration returns `503 SPEECH_PROVIDER_UNAVAILABLE`; normalized upstream failure returns `502 SPEECH_GENERATION_FAILED` without provider response details.

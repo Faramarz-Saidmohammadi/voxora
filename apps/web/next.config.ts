@@ -17,7 +17,7 @@ const securityHeaders = [
 const nextConfig: NextConfig = {
   output: "standalone",
   reactStrictMode: true,
-  transpilePackages: ["@voxora/contracts", "@voxora/domain"],
+  transpilePackages: ["@voxora/contracts", "@voxora/domain", "@voxora/speech"],
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
   },

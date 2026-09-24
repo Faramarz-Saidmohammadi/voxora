@@ -70,7 +70,7 @@ Voxora enables organizations to create, govern, and deliver reusable spoken cont
 ## 5. First vertical slice acceptance criteria
 
 - A professional responsive product page and workspace dashboard run locally.
-- Browser speech preview is accessible and does not transmit text.
+- Browser speech preview is accessible. Local mode transmits no text; configured OpenAI mode requires an AI-generated-voice disclosure before playback.
 - RBAC, usage reservation, and speech-request rules have deterministic unit tests.
 - `/api/health` reports build-safe service metadata.
 - `/api/v1/speech-requests` validates its public contract and enforces role requirements.
@@ -79,4 +79,4 @@ Voxora enables organizations to create, govern, and deliver reusable spoken cont
 
 ## 6. Explicitly deferred
 
-External identity, durable persistence adapters, queue workers, payment provider integration, real speech vendors, and customer data import are milestones after this architecture slice. They must not be represented as complete before their adapters and production tests exist.
+External identity, durable persistence adapters, queue workers, payment provider integration, production provider observability, and customer data import are milestones after this architecture slice. The OpenAI speech adapter is implemented and contract-tested, but durable worker dispatch must not be represented as complete before its persistence and production tests exist.

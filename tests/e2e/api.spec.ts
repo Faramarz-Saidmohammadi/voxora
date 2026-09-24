@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 const speechPath = "/api/v1/speech-requests";
+const generationPath = "/api/v1/speech-generation";
 const requestBody = { text: "Your appointment is confirmed.", locale: "en-US" };
 const requestHeaders = {
   "x-voxora-tenant": "workspace-e2e",
@@ -60,5 +61,25 @@ test("accepts an authorized, valid, idempotent speech request", async ({
   await expect(response.json()).resolves.toMatchObject({
     data: { status: "QUEUED", characterCount: 30 },
     meta: { correlationId: "correlation-e2e-001" },
+  });
+});
+
+test("protects paid speech generation when no provider is configured", async ({
+  request,
+}) => {
+  const response = await request.post(generationPath, {
+    data: { ...requestBody, voice: "cedar", format: "mp3" },
+    headers: {
+      ...requestHeaders,
+      "x-voxora-role": "EDITOR",
+      "x-correlation-id": "correlation-generation-001",
+    },
+  });
+
+  expect(response.status()).toBe(503);
+  expect(response.headers()["cache-control"]).toBe("no-store");
+  await expect(response.json()).resolves.toMatchObject({
+    error: { code: "SPEECH_PROVIDER_UNAVAILABLE" },
+    meta: { correlationId: "correlation-generation-001" },
   });
 });

@@ -21,6 +21,9 @@ The current API route uses clearly documented demo headers to exercise contracts
 
 - Raw phrase and speech text must not appear in logs, traces, analytics, or error reports.
 - Provider requests use the minimum required content and configuration.
+- `OPENAI_API_KEY` is server-only configuration and must never use the `NEXT_PUBLIC_` prefix.
+- Local preview transmits no text. OpenAI preview transmits the requested text only after the user activates generation and displays an AI-voice disclosure.
+- Provider failures are normalized; upstream response bodies and credentials never reach clients.
 - Stored audio uses private object storage and expiring signed URLs.
 - API key material is displayed once and stored only as a keyed hash.
 
@@ -29,6 +32,7 @@ The current API route uses clearly documented demo headers to exercise contracts
 - Per-principal and per-workspace rate limits
 - Usage reservation before provider dispatch
 - Payload size and locale allowlists
+- Paid speech generation stays disabled unless the provider and key are explicitly configured
 - Idempotent requests and webhook handlers
 - Bounded retries with dead-letter inspection
 - Security headers and strict content policies at the edge

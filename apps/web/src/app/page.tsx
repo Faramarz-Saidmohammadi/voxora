@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { Logo } from "@/components/logo";
 import { VoicePreview } from "@/components/voice-preview";
+import { isExternalSpeechPreviewEnabled } from "@/server/speech-provider";
 
 const trustSignals = [
   [
@@ -42,6 +43,8 @@ const architectureSteps = [
 ] as const;
 
 export default function HomePage() {
+  const previewMode = isExternalSpeechPreviewEnabled() ? "openai" : "browser";
+
   return (
     <main className="marketing-shell">
       <nav className="marketing-nav" aria-label="Primary navigation">
@@ -102,7 +105,7 @@ export default function HomePage() {
             </div>
             <span className="environment-badge">Production</span>
           </div>
-          <VoicePreview />
+          <VoicePreview mode={previewMode} />
           <div className="request-grid">
             <div>
               <span>Locale</span>
@@ -110,7 +113,7 @@ export default function HomePage() {
             </div>
             <div>
               <span>Provider</span>
-              <strong>Automatic</strong>
+              <strong>{previewMode === "openai" ? "OpenAI" : "Local"}</strong>
             </div>
             <div>
               <span>Idempotency</span>

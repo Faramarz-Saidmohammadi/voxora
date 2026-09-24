@@ -3,6 +3,7 @@ import Link from "next/link";
 
 import { Logo } from "@/components/logo";
 import { VoicePreview } from "@/components/voice-preview";
+import { isExternalSpeechPreviewEnabled } from "@/server/speech-provider";
 
 export const metadata: Metadata = {
   title: "Workspace",
@@ -37,6 +38,8 @@ const activity = [
 ] as const;
 
 export default function DashboardPage() {
+  const previewMode = isExternalSpeechPreviewEnabled() ? "openai" : "browser";
+
   return (
     <main className="dashboard-shell">
       <aside className="sidebar">
@@ -139,11 +142,20 @@ export default function DashboardPage() {
               <div className="panel-heading">
                 <div>
                   <span className="eyebrow">Voice sandbox</span>
-                  <h2>Preview safely in your browser</h2>
+                  <h2>
+                    {previewMode === "openai"
+                      ? "Generate a governed AI preview"
+                      : "Preview safely in your browser"}
+                  </h2>
                 </div>
-                <span className="privacy-chip">No upload</span>
+                <span className="privacy-chip">
+                  {previewMode === "openai" ? "AI-generated" : "No upload"}
+                </span>
               </div>
-              <VoicePreview text="Your appointment is confirmed. Please arrive fifteen minutes early." />
+              <VoicePreview
+                mode={previewMode}
+                text="Your appointment is confirmed. Please arrive fifteen minutes early."
+              />
             </article>
 
             <article className="panel usage-panel">

@@ -2,7 +2,7 @@
 
 ## Context
 
-Voxora accepts speech work from a web product and external API clients. It applies workspace membership, role, idempotency, and usage rules before dispatching vendor work. Long-running synthesis is asynchronous; browser preview remains local to the user's device.
+Voxora accepts speech work from a web product and external API clients. It applies workspace membership, role, idempotency, and usage rules before dispatching vendor work. Long-running synthesis is asynchronous. Preview remains local by default, while an explicitly configured OpenAI adapter supports governed server-side generation.
 
 ## Deployment model
 
@@ -22,6 +22,7 @@ The repository begins as a modular monolith with one web deployable and a planne
 
 - `domain` imports no framework, database client, queue, or speech SDK.
 - `contracts` owns runtime validation for public boundaries.
+- `speech` owns the provider port and the OpenAI adapter; callers depend on the port rather than the SDK.
 - `web` translates HTTP and UI concerns into domain inputs.
 - Persistence and provider adapters implement ports owned by the application/domain layer.
 - Tenant identity is resolved at the boundary and passed explicitly; no ambient global tenant.
@@ -56,6 +57,6 @@ The initial SQL models workspaces, memberships, phrases, speech requests, and au
 
 1. Replace demo data with PostgreSQL repositories and signed sessions.
 2. Add transactional outbox plus Redis/BullMQ worker.
-3. Add provider adapters behind contract tests.
+3. Dispatch the tested provider adapter through the durable worker and persist normalized results.
 4. Add OIDC, API key rotation, subscription webhooks, and retention jobs.
 5. Split deployables only when scaling or ownership data justifies it.

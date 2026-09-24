@@ -12,6 +12,7 @@ This repository is intentionally built as a production-oriented modular monolith
 - Usage budgets, idempotency, and billing-ready metering
 - Auditability for sensitive workspace actions
 - Accessible browser voice preview with keyboard-friendly controls
+- Optional OpenAI speech generation behind a provider-independent adapter
 - Public health and versioned API routes
 
 ## Architecture
@@ -20,6 +21,7 @@ This repository is intentionally built as a production-oriented modular monolith
 apps/web            Next.js App Router product and API surface
 packages/contracts  Runtime-validated public request/response contracts
 packages/domain     Tenant authorization, usage, and speech workflow rules
+packages/speech     Provider port and tested OpenAI speech adapter
 infra               Local PostgreSQL and Redis services
 docs                SRS, architecture, security, API, and ADRs
 ```
@@ -37,6 +39,18 @@ npm run dev
 ```
 
 Open `http://localhost:3000` for the product overview and `http://localhost:3000/dashboard` for the workspace experience.
+
+### OpenAI speech preview
+
+The default `browser-demo` mode sends no preview text to an external provider. To enable server-side OpenAI speech generation locally, set these private environment variables in `.env`:
+
+```bash
+SPEECH_PROVIDER=openai
+OPENAI_API_KEY=your-project-api-key
+OPENAI_SPEECH_MODEL=gpt-4o-mini-tts
+```
+
+The API key is read only by the server-side provider factory and is never prefixed with `NEXT_PUBLIC_`. The interface identifies generated playback as an AI-generated voice. Do not enable the paid provider on a public deployment until the documented demo identity headers are replaced by signed sessions or scoped API keys and distributed rate limits.
 
 Optional infrastructure:
 
@@ -62,10 +76,11 @@ npm run test:e2e
 - [Security model](docs/SECURITY.md)
 - [API contract](docs/API.md)
 - [Modular-monolith decision](docs/adr/0001-modular-monolith.md)
+- [OpenAI adapter decision](docs/adr/0002-openai-speech-adapter.md)
 
 ## Delivery status
 
-The repository currently contains the architecture foundation and the first executable vertical slice. PostgreSQL persistence, durable queue adapters, external identity, and real speech providers remain explicit follow-up milestones rather than simulated production features.
+The repository currently contains the architecture foundation, the first executable vertical slice, and a contract-tested OpenAI speech adapter for governed previews. PostgreSQL persistence, durable queue dispatch, external identity, payment integration, and production provider observability remain explicit follow-up milestones rather than simulated production features.
 
 ## License
 
