@@ -24,6 +24,11 @@ export type GenerateSpeechInput = Readonly<{
   instructions?: string;
 }>;
 
+export type GenerateSpeechOptions = Readonly<{
+  idempotencyKey?: string;
+  signal?: AbortSignal;
+}>;
+
 export type GeneratedSpeech = Readonly<{
   bytes: Uint8Array;
   contentType: "audio/mpeg" | "audio/wav" | "audio/ogg";
@@ -33,7 +38,10 @@ export type GeneratedSpeech = Readonly<{
 }>;
 
 export interface SpeechProvider {
-  generate(input: GenerateSpeechInput): Promise<GeneratedSpeech>;
+  generate(
+    input: GenerateSpeechInput,
+    options?: GenerateSpeechOptions,
+  ): Promise<GeneratedSpeech>;
 }
 
 export class SpeechProviderConfigurationError extends Error {

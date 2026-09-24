@@ -12,6 +12,7 @@ export function VoicePreview({
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [supportError, setSupportError] = useState(false);
+  const [errorReference, setErrorReference] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const objectUrlRef = useRef<string | null>(null);
 
@@ -39,12 +40,14 @@ export function VoicePreview({
 
     setIsLoading(true);
     setSupportError(false);
+    setErrorReference(null);
 
     try {
       const response = await fetch("/api/v1/speech-generation", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          Accept: "audio/mpeg",
           "x-voxora-tenant": "workspace-demo",
           "x-voxora-actor": "dashboard-preview",
           "x-voxora-role": "EDITOR",
@@ -58,7 +61,13 @@ export function VoicePreview({
         }),
       });
 
-      if (!response.ok) throw new Error("Speech generation failed");
+      if (!response.ok) {
+        const payload = (await response.json().catch(() => null)) as {
+          meta?: { correlationId?: string };
+        } | null;
+        setErrorReference(payload?.meta?.correlationId ?? null);
+        throw new Error("Speech generation failed");
+      }
 
       const objectUrl = URL.createObjectURL(await response.blob());
       const audio = new Audio(objectUrl);
@@ -110,7 +119,7 @@ export function VoicePreview({
   }
 
   return (
-    <div className="voice-preview">
+    <div className="voice-preview" aria-busy={isLoading}>
       <div className="voice-copy">
         <span className="eyebrow">
           {mode === "openai" ? "Governed AI preview" : "Local browser preview"}
@@ -155,7 +164,7 @@ export function VoicePreview({
       {supportError ? (
         <p className="support-note" role="status">
           {mode === "openai"
-            ? "AI speech generation is temporarily unavailable."
+            ? `AI speech generation is temporarily unavailable.${errorReference ? ` Reference: ${errorReference}` : ""}`
             : "Speech preview is unavailable in this browser."}
         </p>
       ) : null}

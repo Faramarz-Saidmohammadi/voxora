@@ -1,8 +1,15 @@
-import OpenAI from "openai";
+import OpenAI, {
+  APIConnectionError,
+  APIError,
+  AuthenticationError,
+  PermissionDeniedError,
+} from "openai";
 
 import {
+  SpeechProviderConfigurationError,
   SpeechProviderRequestError,
   type GenerateSpeechInput,
+  type GenerateSpeechOptions,
   type GeneratedSpeech,
   type SpeechProvider,
 } from "./provider";
@@ -16,13 +23,16 @@ type SpeechResponse = Readonly<{
 export type OpenAISpeechClient = Readonly<{
   audio: {
     speech: {
-      create(input: {
-        model: string;
-        voice: string;
-        input: string;
-        instructions?: string;
-        response_format: OpenAIResponseFormat;
-      }): Promise<SpeechResponse>;
+      create(
+        input: {
+          model: string;
+          voice: string;
+          input: string;
+          instructions?: string;
+          response_format: OpenAIResponseFormat;
+        },
+        options?: GenerateSpeechOptions,
+      ): Promise<SpeechResponse>;
     };
   };
 }>;
@@ -30,6 +40,8 @@ export type OpenAISpeechClient = Readonly<{
 export type OpenAISpeechProviderOptions = Readonly<{
   apiKey: string;
   model?: string;
+  timeoutMs?: number;
+  maxRetries?: number;
   client?: OpenAISpeechClient;
 }>;
 
@@ -47,20 +59,30 @@ export class OpenAISpeechProvider implements SpeechProvider {
     this.#model = options.model?.trim() || "gpt-4o-mini-tts";
     this.#client =
       options.client ??
-      (new OpenAI({ apiKey: options.apiKey }) as unknown as OpenAISpeechClient);
+      (new OpenAI({
+        apiKey: options.apiKey,
+        timeout: options.timeoutMs ?? 30_000,
+        maxRetries: options.maxRetries ?? 2,
+      }) as unknown as OpenAISpeechClient);
   }
 
-  async generate(input: GenerateSpeechInput): Promise<GeneratedSpeech> {
+  async generate(
+    input: GenerateSpeechInput,
+    options?: GenerateSpeechOptions,
+  ): Promise<GeneratedSpeech> {
     const format = formatConfiguration[input.format];
 
     try {
-      const response = await this.#client.audio.speech.create({
-        model: this.#model,
-        voice: input.voice,
-        input: input.text,
-        ...(input.instructions ? { instructions: input.instructions } : {}),
-        response_format: format.responseFormat,
-      });
+      const response = await this.#client.audio.speech.create(
+        {
+          model: this.#model,
+          voice: input.voice,
+          input: input.text,
+          ...(input.instructions ? { instructions: input.instructions } : {}),
+          response_format: format.responseFormat,
+        },
+        options,
+      );
 
       return {
         bytes: new Uint8Array(await response.arrayBuffer()),
@@ -69,8 +91,23 @@ export class OpenAISpeechProvider implements SpeechProvider {
         model: this.#model,
         voice: input.voice,
       };
-    } catch {
-      throw new SpeechProviderRequestError(true);
+    } catch (error) {
+      if (
+        error instanceof AuthenticationError ||
+        error instanceof PermissionDeniedError
+      ) {
+        throw new SpeechProviderConfigurationError();
+      }
+
+      const retryable =
+        error instanceof APIConnectionError ||
+        (error instanceof APIError &&
+          (error.status === 408 ||
+            error.status === 409 ||
+            error.status === 429 ||
+            (typeof error.status === "number" && error.status >= 500)));
+
+      throw new SpeechProviderRequestError(retryable);
     }
   }
 }

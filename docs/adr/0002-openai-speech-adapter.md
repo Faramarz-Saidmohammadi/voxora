@@ -16,6 +16,7 @@ Voxora needs high-quality generated speech without coupling domain rules, HTTP c
 - Keep external generation disabled by default.
 - Validate, authorize, and reserve usage before provider invocation.
 - Normalize configuration and upstream errors so credentials and provider response bodies cannot reach clients.
+- Bound provider requests to a 30-second timeout and two SDK retries, propagate cancellation, and classify retryable failures.
 - Present an explicit AI-generated-voice disclosure before playback.
 
 ## Consequences

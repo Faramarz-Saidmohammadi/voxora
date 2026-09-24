@@ -81,4 +81,4 @@ Success: `200 OK` with binary audio and these response headers:
 - `X-Voxora-AI-Disclosure`: `AI-generated voice`
 - `Cache-Control`: `no-store`
 
-The synchronous route limits text to 1,200 characters. Missing provider configuration returns `503 SPEECH_PROVIDER_UNAVAILABLE`; normalized upstream failure returns `502 SPEECH_GENERATION_FAILED` without provider response details.
+The synchronous route limits text to 1,200 characters. Missing or invalid provider configuration returns `503 SPEECH_PROVIDER_UNAVAILABLE`. Normalized upstream failure returns `502 SPEECH_GENERATION_FAILED` without provider response details; retryable connection, timeout, rate-limit, and server failures include `Retry-After: 2`.

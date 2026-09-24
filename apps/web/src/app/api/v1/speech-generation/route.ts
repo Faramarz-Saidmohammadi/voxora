@@ -28,7 +28,12 @@ function errorResponse(
   message: string,
   correlationId: string,
   details?: unknown,
+  headers?: HeadersInit,
 ) {
+  const responseHeaders = new Headers(headers);
+  responseHeaders.set("Cache-Control", "no-store");
+  responseHeaders.set("X-Correlation-ID", correlationId);
+
   return Response.json(
     {
       error: { code, message, ...(details ? { details } : {}) },
@@ -36,10 +41,7 @@ function errorResponse(
     },
     {
       status,
-      headers: {
-        "Cache-Control": "no-store",
-        "X-Correlation-ID": correlationId,
-      },
+      headers: responseHeaders,
     },
   );
 }
@@ -108,14 +110,17 @@ export async function POST(request: Request) {
     });
 
     const provider = createConfiguredSpeechProvider();
-    const audio = await provider.generate({
-      text: parsed.data.text,
-      voice: parsed.data.voice,
-      format: parsed.data.format,
-      instructions:
-        parsed.data.instructions ??
-        `Speak clearly and naturally using the ${parsed.data.locale} locale.`,
-    });
+    const audio = await provider.generate(
+      {
+        text: parsed.data.text,
+        voice: parsed.data.voice,
+        format: parsed.data.format,
+        instructions:
+          parsed.data.instructions ??
+          `Speak clearly and naturally using the ${parsed.data.locale} locale.`,
+      },
+      { idempotencyKey, signal: request.signal },
+    );
 
     return new Response(audio.bytes.slice().buffer, {
       status: 200,
@@ -163,6 +168,8 @@ export async function POST(request: Request) {
         "SPEECH_GENERATION_FAILED",
         "Speech generation failed; retry the request later",
         correlationId,
+        undefined,
+        error.retryable ? { "Retry-After": "2" } : undefined,
       );
     }
 

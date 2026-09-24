@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import { AuthenticationError, RateLimitError } from "openai";
 
 import {
   OpenAISpeechProvider,
@@ -34,13 +35,16 @@ describe("OpenAI speech provider", () => {
       instructions: "Speak clearly and calmly in English.",
     });
 
-    expect(create).toHaveBeenCalledWith({
-      model: "gpt-4o-mini-tts",
-      voice: "cedar",
-      input: "Your appointment is confirmed.",
-      instructions: "Speak clearly and calmly in English.",
-      response_format: "opus",
-    });
+    expect(create).toHaveBeenCalledWith(
+      {
+        model: "gpt-4o-mini-tts",
+        voice: "cedar",
+        input: "Your appointment is confirmed.",
+        instructions: "Speak clearly and calmly in English.",
+        response_format: "opus",
+      },
+      undefined,
+    );
     expect(result).toMatchObject({
       contentType: "audio/ogg",
       provider: "openai",
@@ -63,13 +67,62 @@ describe("OpenAI speech provider", () => {
 
     const provider = new OpenAISpeechProvider({ apiKey: "test-key", client });
 
+    const promise = provider.generate({
+      text: "Hello",
+      voice: "marin",
+      format: "mp3",
+    });
+
+    await expect(promise).rejects.toMatchObject({
+      name: "SpeechProviderRequestError",
+      retryable: false,
+    });
+  });
+
+  it("marks rate-limit failures as retryable", async () => {
+    const client = {
+      audio: {
+        speech: {
+          create: vi.fn(async () => {
+            throw new RateLimitError(
+              429,
+              { message: "rate limited" },
+              "rate limited",
+              new Headers(),
+            );
+          }),
+        },
+      },
+    } as OpenAISpeechClient;
+
+    const provider = new OpenAISpeechProvider({ apiKey: "test-key", client });
+
     await expect(
-      provider.generate({
-        text: "Hello",
-        voice: "marin",
-        format: "mp3",
-      }),
-    ).rejects.toEqual(expect.any(SpeechProviderRequestError));
+      provider.generate({ text: "Hello", voice: "cedar", format: "mp3" }),
+    ).rejects.toMatchObject({ retryable: true });
+  });
+
+  it("normalizes invalid provider credentials as configuration errors", async () => {
+    const client = {
+      audio: {
+        speech: {
+          create: vi.fn(async () => {
+            throw new AuthenticationError(
+              401,
+              { message: "invalid secret credential" },
+              "invalid secret credential",
+              new Headers(),
+            );
+          }),
+        },
+      },
+    } as OpenAISpeechClient;
+
+    const provider = new OpenAISpeechProvider({ apiKey: "test-key", client });
+
+    await expect(
+      provider.generate({ text: "Hello", voice: "cedar", format: "mp3" }),
+    ).rejects.toEqual(expect.any(SpeechProviderConfigurationError));
   });
 
   it("provides a stable configuration error without secret material", () => {
