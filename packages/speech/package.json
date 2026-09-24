@@ -1,0 +1,23 @@
+{
+  "name": "@voxora/speech",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "lint": "tsc --noEmit --pretty false",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run --coverage"
+  },
+  "dependencies": {
+    "openai": "7.23.0"
+  },
+  "devDependencies": {
+    "@vitest/coverage-v8": "5.0.1",
+    "typescript": "6.0.3",
+    "vitest": "5.0.1"
+  }
+}
